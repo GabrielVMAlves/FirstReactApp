@@ -1,10 +1,28 @@
 import React, { Component } from 'react';
-import { Button, View, Text } from 'react-native';
+import { StyleSheet, FlatList, ActivityIndicator, View, Text } from 'react-native';
+import { ListItem, Button } from 'react-native-elements';
+import Database from '../Database';
+
+const db = new Database();
 
 export default class ProductScreen extends Component {
-  static navigationOptions = {
-    title: 'Product List',
+  static navigationOptions = ({navigation}) => {
+    return {
+      title: 'Product List',
+      headerRight: (
+        <Button
+          buttonStyle={{ padding: 0, backgroundColor: 'transparent' }}
+          icon={{ name: 'add-circle', style: { marginRight: 0, fontSize: 28 } }}
+          onPress={() => {
+            navigation.navigate('AddProduct', {
+              onNavigateBack: this.handleOnNavigateBack
+            });
+          }}
+        />
+      ),
+    };
   };
+
   render() {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -24,4 +42,54 @@ export default class ProductScreen extends Component {
       </View>
     );
   }
+
+  constructor() {
+    super();
+    this.state = {
+      isLoading = true,
+      products: [],
+      notFound: 'Products not found.\nPlease click (+) button to add it.'
+    };
+  }
+
+  componentDidMount() {
+    this._subscribe = this.props.navigation.addListener('didFocus', () => {
+      this.getProducts();
+    });
+  }
+
+  getProducts() {
+    let products = [];
+    db.listProduct().then((data) => {
+      products = data;
+      this.setState({
+        products,
+        isLoading: false,
+      });
+    }).catch((err) => {
+      console.log(err);
+      this.setState = {
+        isLoading: false
+      }
+    })
+  }
+
+  keyExtractor = (item, index) => index.toString()
+
+  renderItem = ({ item }) => (
+    <ListItem
+      title={item.prodName}
+      leftAvatar={{
+        source: item.prodImage && { uri: item.prodImage },
+        title: item.prodName[0]
+      }}
+      onPress={() => {
+        this.props.navigation.navigate('ProductDetails', {
+          prodId: `${item.prodId}`,
+        });
+      }}
+      chevron
+      bottomDivider
+    />
+  )
 }
